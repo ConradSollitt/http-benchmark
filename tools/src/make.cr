@@ -2,7 +2,22 @@ require "admiral"
 require "yaml"
 require "crustache"
 
-alias DockerVariable = String | Array(String)
+alias DockerParam = String | Array(String)
+
+class Merger
+  alias ConfigHash = Hash(YAML::Any, YAML::Any)
+
+  def initialize(params : ConfigHash)
+    @params = params
+  end
+
+  def merge(other = {} of String => String)
+    @params.try do |params|
+      other = params.merge(other)
+    end
+    return other
+  end
+end
 
 struct FrameworkConfig
   property name : String
@@ -12,6 +27,34 @@ struct FrameworkConfig
 
   def initialize(@name, @website, @version, @langver)
   end
+end
+
+def create_dockerfile(source, target, config, runtime)
+  params = {} of String => DockerParam
+  if config.has_key?("environment")
+    environment = ""
+    config["environment"].as_h.each do |k, v|
+      environment += "#{k} #{v}"
+    end
+    params["environment"] = environment
+  end
+
+  # Files
+  files = [] of String
+  config["files"]["default"].as_a.each do |name|
+    files << "#{name.to_s} #{name.to_s}"
+  end
+  if config["files"][runtime]
+    config["files"][runtime].as_h.each do |source, target|
+      files << "#{target.to_s} #{source.to_s}"
+    end
+  end
+  params["files"] = files
+
+  # Command
+  params["command"] = config["commands"][runtime].to_s
+
+  File.write(target, Crustache.render(source, params))
 end
 
 class App < Admiral::Command
@@ -34,195 +77,6 @@ class App < Admiral::Command
 
         frameworks[language] << framework
       end
-
-      selection = YAML.build do |yaml|
-        yaml.mapping do
-          yaml.scalar "main"
-          yaml.mapping do
-            yaml.scalar "depends_on"
-            yaml.sequence do
-              frameworks.each do |language, _|
-                yaml.scalar language
-              end
-            end
-          end
-          frameworks.each do |language, tools|
-            yaml.scalar language
-            yaml.mapping do
-              yaml.scalar "depends_on"
-              yaml.sequence do
-                tools.each do |tool|
-                  yaml.scalar tool
-                end
-              end
-            end
-          end
-          frameworks.each do |language, tools|
-            lang_config = YAML.parse(File.read("#{language}/config.yaml"))
-            dockerfile = Crustache.parse(File.read("#{language}/Dockerfile"))
-            params = {} of String => DockerVariable
-            tools.each do |tool|
-              params = {} of String => DockerVariable
-              framework_config = YAML.parse(File.read("#{language}/#{tool}/config.yaml"))
-
-              if framework_config.as_h.has_key?("environment")
-                environment = [] of String
-                framework_config["environment"].as_h.each do |k, v|
-                  environment << "#{k} #{v}"
-                end
-                params["environment"] = environment
-              end
-              if framework_config.as_h.has_key?("image")
-                params["image"] = framework_config.as_h["image"].to_s
-              end
-              if framework_config.as_h.has_key?("build_opts")
-                params["build_opts"] = framework_config.as_h["build_opts"].to_s
-              end
-              if framework_config.as_h.has_key?("deps")
-                deps = [] of String
-                framework_config["deps"].as_a.each do |dep|
-                  deps << dep.to_s
-                end
-                params["deps"] = deps
-              end
-
-              if framework_config.as_h.has_key?("before_build")
-                deps = [] of String
-                framework_config["before_build"].as_a.each do |dep|
-                  deps << dep.to_s
-                end
-                params["before_build"] = deps
-              end
-              if framework_config.as_h.has_key?("patch")
-                deps = [] of String
-                framework_config["patch"].as_a.each do |dep|
-                  deps << dep.to_s
-                end
-                params["patch"] = deps
-              end
-              if framework_config.as_h.has_key?("build_deps")
-                deps = [] of String
-                framework_config["build_deps"].as_a.each do |dep|
-                  deps << dep.to_s
-                end
-                params["build_deps"] = deps
-              end
-              if framework_config.as_h.has_key?("bin_deps")
-                deps = [] of String
-                framework_config["bin_deps"].as_a.each do |dep|
-                  deps << dep.to_s
-                end
-                params["bin_deps"] = deps
-              end
-              if framework_config.as_h.has_key?("php_mod")
-                deps = [] of String
-                framework_config["php_mod"].as_a.each do |ext|
-                  deps << ext.to_s
-                end
-                params["php_mod"] = deps
-              end
-              if framework_config.as_h.has_key?("arguments")
-                params["arguments"] = framework_config["arguments"].to_s
-              end
-              if framework_config.as_h.has_key?("fixes")
-                deps = [] of String
-                framework_config["fixes"].as_a.each do |dep|
-                  deps << dep.to_s
-                end
-                params["fixes"] = deps
-              end
-              if framework_config.as_h.has_key?("nginx_conf")
-                deps = [] of String
-                framework_config["nginx_conf"].as_a.each do |dep|
-                  deps << dep.to_s
-                end
-                params["nginx_conf"] = deps
-              end
-              if framework_config.as_h.has_key?("php_ext")
-                deps = [] of String
-                framework_config["php_ext"].as_a.each do |ext|
-                  deps << ext.to_s
-                end
-                params["php_ext"] = deps
-              end
-              if framework_config.as_h.has_key?("fixes")
-                deps = [] of String
-                framework_config["fixes"].as_a.each do |ext|
-                  deps << ext.to_s
-                end
-                params["fixes"] = deps
-              end
-              if framework_config.as_h.has_key?("arguments")
-                params["arguments"] = framework_config["arguments"].to_s
-              end
-              if framework_config.as_h.has_key?("docroot")
-                params["docroot"] = framework_config["docroot"].to_s
-                params["slasheddocroot"] = params["docroot"].to_s.gsub("/", "\\/")
-              end
-              if framework_config.as_h.has_key?("options")
-                params["options"] = framework_config["options"].to_s
-              end
-              if framework_config.as_h.has_key?("command")
-                params["command"] = framework_config["command"].to_s
-              end
-              if framework_config.as_h.has_key?("before_command")
-                before_command = [] of String
-                framework_config["before_command"].as_a.each do |cmd|
-                  before_command << cmd.to_s
-                end
-                params["before_command"] = before_command
-              end
-              if framework_config.as_h.has_key?("standalone")
-                params["standalone"] = framework_config["standalone"].to_s
-              end
-              if framework_config.as_h.has_key?("build")
-                build = [] of String
-                framework_config["build"].as_a.each do |cmd|
-                  build << cmd.to_s
-                end
-                params["build"] = build
-              end
-              if framework_config.as_h.has_key?("clone")
-                clone = [] of String
-                framework_config["clone"].as_a.each do |cmd|
-                  clone << cmd.to_s
-                end
-                params["clone"] = clone
-              end
-              if framework_config.as_h.has_key?("files")
-                files = [] of String
-                framework_config.as_h["files"].as_a.each do |file|
-                  files << file.to_s
-                end
-                params["files"] = files
-              end
-              File.write("#{language}/#{tool}/Dockerfile", Crustache.render(dockerfile, params))
-              yaml.scalar tool
-              yaml.mapping do
-                yaml.scalar "commands"
-                yaml.sequence do
-                  # Build container
-                  yaml.scalar "docker build -t #{tool} . #{flags.docker_options}"
-
-                  # Run container, and store IP
-                  yaml.scalar "docker run -td #{tool} | xargs -i docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' {} > ip.txt"
-
-                  # Lannch sieging
-                  unless flags.without_sieger
-                    yaml.scalar "../../bin/client -l #{language} -f #{tool} -r GET:/ -r GET:/user/0 -r POST:/user #{flags.sieger_options}"
-                  end
-
-                  # Stop the container
-                  yaml.scalar "docker ps -a -q  --filter ancestor=#{tool}  | xargs -r docker rm -f"
-                end
-                yaml.scalar "dir"
-                yaml.scalar "#{language}/#{tool}"
-              end
-            end
-          end
-        end
-      end
-      File.write("neph.yaml", selection)
     end
   end
 

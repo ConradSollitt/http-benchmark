@@ -33,11 +33,6 @@ update_configs:
   - language:rust
 - package_manager: ruby:bundler
   update_schedule: live
-  directory: ruby/rails
-  default_labels:
-  - language:ruby
-- package_manager: ruby:bundler
-  update_schedule: live
   directory: ruby/grape
   default_labels:
   - language:ruby

@@ -5,4 +5,8 @@ framework:
 environment:
   AGOO_WORKER_COUNT: $(nproc)
 
+files:
+  default:
+    - app.rb
+    - Gemfile
 command: ruby app.rb

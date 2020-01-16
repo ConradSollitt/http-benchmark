@@ -2,4 +2,9 @@ framework:
   github: boazsegev/plezi
   version: 0.16
 
+files:
+  default:
+    - config.ru
+    - Gemfile
+    
 command: bundle exec iodine -w $(nproc) -p 3000 -t 1

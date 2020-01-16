@@ -8,21 +8,24 @@ class App < Admiral::Command
     def run
       results = {} of String => Hash(String, String | Float64 | Float32)
       order_by_requests = <<-EOS
-SELECT f.id as framework, l.label, f.label, k.label, sum(v.value/3)::float
-  FROM values AS v
-    JOIN metrics AS m ON m.value_id = v.id 
-    JOIN frameworks AS f ON f.id = m.framework_id 
-    JOIN keys AS k ON v.key_id = k.id 
-    JOIN languages AS l on l.id = f.language_id 
-      GROUP BY 1,2,3,4
-        ORDER BY k.label=$1 desc, 5 desc
+SELECT r.id, l.label, f.label, e.label, m.label, avg(c.value) 
+  FROM frameworks AS f 
+  JOIN writable AS w ON w.framework_id = f.id 
+  JOIN languages AS l ON l.id = w.language_id 
+  JOIN runnable AS r ON r.writable_id = w.id 
+  JOIN engines AS e ON e.id = r.engine_id 
+  JOIN computable AS c ON c.runnable_id = r.id 
+  JOIN metrics AS m ON c.metric_id = m.id 
+    GROUP BY 1,2,3,4,5
+      ORDER BY 6 DESC
 EOS
       DB.open(ENV["DATABASE_URL"]) do |db|
-        db.query order_by_requests, "request_per_second" do |row|
+        db.query order_by_requests do |row|
           row.each do
             key = row.read(Int).to_s
             language = row.read(String)
             framework = row.read(String)
+            engine = row.read(String)
             metric = row.read(String)
             value = row.read(Float)
             unless results.has_key?(key)
@@ -31,6 +34,7 @@ EOS
               config = YAML.parse(File.read("#{language}/config.yaml"))
               results[key]["language_version"] = config["provider"]["default"]["language"].to_s
               results[key]["framework"] = framework
+              results[key]["engine"] = engine
               config = YAML.parse(File.read("#{language}/config.yaml"))
               results[key]["language_version"] = config["provider"]["default"]["language"].to_s
               config = YAML.parse(File.read("#{language}/#{framework}/config.yaml"))
@@ -52,18 +56,19 @@ EOS
         end
       end
       lines = [
-        "|    | Language | Framework | Speed (`req/s`) | Horizontal scale (parallelism) | Vertical scale (concurrency) |",
-        "|----|----------|-----------|----------------:|-------------|-------------|",
+        "|    | Language | Framework | Engine | Speed (`req/s`) | Horizontal scale (parallelism) | Vertical scale (concurrency) |",
+        "|----|----------|-----------|--------|----------------:|-------------|-------------|",
       ]
       c = 1
       results.each do |_, row|
-        lines << "| %s | %s (%s)| [%s](%s) (%s) | %s | | |" % [
+        lines << "| %s | %s (%s)| [%s](%s) (%s) | %s | %s | | |" % [
           c,
           row["language"],
           row["language_version"],
           row["framework"],
           row["framework_website"],
           row["framework_version"],
+          row["engine"],
           row["request_per_second"].to_f.trunc.format(delimiter: ' ', decimal_places: 0),
         ]
         c += 1

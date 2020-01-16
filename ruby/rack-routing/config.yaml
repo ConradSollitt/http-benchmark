@@ -2,3 +2,9 @@ framework:
   github: georgeu2000/rack-routing
   version: 0.0
   
+files:
+  default:
+    - app
+    - config
+    - config.ru
+    - Gemfile

@@ -1,4 +1,11 @@
 framework:
   website: hanamirb.org
   version: 1.3
+
+files:
+  default:
+    - apps
+    - config
+    - config.ru
+    - Gemfile
   

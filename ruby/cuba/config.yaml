@@ -1,4 +1,10 @@
 framework:
   website: cuba.is
   version: 3.9
+
+files:
+  default:
+    - app.rb
+    - config.ru
+    - Gemfile
   

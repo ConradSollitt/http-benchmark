@@ -1,4 +1,10 @@
 framework:
   github: camping/camping
   version: 2.1
+
+files:
+  default:
+    - config.ru
+    - app.rb
+    - Gemfile
   

@@ -2,7 +2,9 @@ FROM ruby:2.6-alpine
 
 WORKDIR /usr/src/app
 
-COPY . ./
+{{#files}}
+  COPY {{{.}}}
+{{/files}}
 
 RUN apk add build-base
 
@@ -12,10 +14,4 @@ RUN bundle install --without development test
 ENV {{{.}}}
 {{/environment}}
 
-{{#command}}
-  CMD {{{command}}}
-{{/command}}
-
-{{^command}}
-  CMD bundle exec puma -p 3000 -e production -w $(nproc)
-{{/command}}
+CMD {{{command}}}

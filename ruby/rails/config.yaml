@@ -1,3 +1,29 @@
 framework:
   website: rubyonrails.org
   version: 6.0
+
+files:
+
+  default:
+
+    - app
+    - config
+    - config.ru
+    - Rakefile
+
+  puma:
+
+    Gemfile: puma/Gemfile
+
+  falcon:
+
+    Gemfile: falcon/Gemfile
+
+  iodine:
+
+    Gemfile: iodine/Gemfile
+
+environment:
+  RACK_ENV: production
+  
+default_runtime: puma
