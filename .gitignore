@@ -13,5 +13,6 @@
 
 # Temporary files
 FRAMEWORKS.yaml
+*/*/Dockerfile.*
 */*/Dockerfile
-*/*/ip.txt
+*/*/ip.*.txt
