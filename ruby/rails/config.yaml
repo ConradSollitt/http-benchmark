@@ -22,8 +22,5 @@ files:
   iodine:
 
     Gemfile: iodine/Gemfile
-
-environment:
-  RACK_ENV: production
   
 default_runtime: puma

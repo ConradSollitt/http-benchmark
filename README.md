@@ -85,9 +85,12 @@ bin/db to_readme
 
 |    | Language | Framework | Engine | Speed (`req/s`) | Horizontal scale (parallelism) | Vertical scale (concurrency) |
 |----|----------|-----------|--------|----------------:|-------------|-------------|
-| 1 | ruby (2.6)| [rails](https://rubyonrails.org) (6.0) | falcon | 3 840 | | |
-| 2 | ruby (2.6)| [rails](https://rubyonrails.org) (6.0) | iodine | 3 684 | | |
-| 3 | ruby (2.6)| [rails](https://rubyonrails.org) (6.0) | puma | 2 856 | | |
+| 1 | ruby (2.6)| [syro](https://github.com/soveran/syro) (3.1) | puma | 40 238 | | |
+| 2 | ruby (2.6)| [syro](https://github.com/soveran/syro) (3.1) | falcon | 32 212 | | |
+| 3 | ruby (2.6)| [syro](https://github.com/soveran/syro) (3.1) | iodine | 25 695 | | |
+| 4 | ruby (2.6)| [rails](https://rubyonrails.org) (6.0) | iodine | 4 137 | | |
+| 5 | ruby (2.6)| [rails](https://rubyonrails.org) (6.0) | falcon | 4 114 | | |
+| 6 | ruby (2.6)| [rails](https://rubyonrails.org) (6.0) | puma | 3 760 | | |
 
 ## How to contribute ?
 

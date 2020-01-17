@@ -29,7 +29,7 @@ struct FrameworkConfig
   end
 end
 
-def create_dockerfile(source, target, config, runtime)
+def create_dockerfile(source, target, config, engine)
   params = {} of String => DockerParam
   if config.has_key?("environment")
     environment = ""
@@ -44,17 +44,18 @@ def create_dockerfile(source, target, config, runtime)
   config["files"]["default"].as_a.each do |name|
     files << "#{name.to_s} #{name.to_s}"
   end
-  if config["files"][runtime]
-    config["files"][runtime].as_h.each do |source, target|
+  if config["files"][engine]
+    config["files"][engine].as_h.each do |source, target|
       files << "#{target.to_s} #{source.to_s}"
     end
   end
   params["files"] = files
 
   # Command
-  params["command"] = config["commands"][runtime].to_s
+  params["command"] = config["engines"][engine].to_s
 
-  File.write(target, Crustache.render(source, params))
+  template = Crustache.parse(File.read(source))
+  File.write(target, Crustache.render(template, params))
 end
 
 class App < Admiral::Command
@@ -71,11 +72,15 @@ class App < Admiral::Command
         framework = infos.pop
         language = infos.pop
 
-        unless frameworks.has_key?(language)
-          frameworks[language] = [] of String
+        framework_config = YAML.parse(File.read(File.join(directory, "config.yaml")))
+        language_config = YAML.parse(File.read(File.join(directory, "..", "config.yaml")))
+        merger = Merger.new(language_config.as_h)
+        config = merger.merge(framework_config.as_h)
+        if config.has_key?("engines") && ["syro", "rails"].includes?(framework)
+          config["engines"].as_h.each do |engine, _|
+            create_dockerfile(File.join(directory, "..", "Dockerfile"), File.join(directory, "Dockerfile.#{engine}"), config, engine)
+          end
         end
-
-        frameworks[language] << framework
       end
     end
   end

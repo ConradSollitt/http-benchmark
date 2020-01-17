@@ -2,3 +2,25 @@ framework:
   website: github.com/soveran/syro
   version: 3.1
 
+
+files:
+
+  default:
+
+    - app.rb
+    - config.ru
+
+  puma:
+
+    Gemfile: puma/Gemfile
+
+  falcon:
+
+    Gemfile: falcon/Gemfile
+
+  iodine:
+
+    Gemfile: iodine/Gemfile
+
+default_runtime: puma
+
