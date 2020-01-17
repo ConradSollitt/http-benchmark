@@ -76,7 +76,7 @@ class App < Admiral::Command
         language_config = YAML.parse(File.read(File.join(directory, "..", "config.yaml")))
         merger = Merger.new(language_config.as_h)
         config = merger.merge(framework_config.as_h)
-        if config.has_key?("engines") && ["syro", "rails"].includes?(framework)
+        if config.has_key?("engines") && ["syro", "rails", "sinatra"].includes?(framework)
           config["engines"].as_h.each do |engine, _|
             create_dockerfile(File.join(directory, "..", "Dockerfile"), File.join(directory, "Dockerfile.#{engine}"), config, engine)
           end

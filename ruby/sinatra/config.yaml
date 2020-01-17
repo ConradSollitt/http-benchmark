@@ -2,3 +2,24 @@ framework:
   website: sinatrarb.com
   version: 2.0
   
+
+files:
+
+  default:
+
+    - app.rb
+    - config.ru
+
+  puma:
+
+    Gemfile: puma/Gemfile
+
+  falcon:
+
+    Gemfile: falcon/Gemfile
+
+  iodine:
+
+    Gemfile: iodine/Gemfile
+
+default_runtime: puma
